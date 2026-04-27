@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>DCA SAVINGS TRADING PRO</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #050505;
+      --bg-soft: #101010;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 215, 0, 0.18);
+      --text: #f5f5f5;
+      --muted: #9a9a9a;
+      --gold: #ffd700;
+      --gold-soft: rgba(255, 215, 0, 0.14);
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --radius: 24px;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      background: linear-gradient(180deg, #0a0a0a, #000);
+      color: var(--text);
+      font-family: "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 24px 12px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .desktop-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px 8px 20px 0;
+    }
+
+    .desktop-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .desktop-title {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.05;
+      margin: 0 0 10px;
+      color: var(--gold);
+    }
+
+    .desktop-copy {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .desktop-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .desktop-stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .desktop-stat-value {
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .phone {
+      width: 100%;
+      min-height: min(860px, calc(100vh - 48px));
+      background:
+        radial-gradient(circle at top, rgba(255,215,0,0.08), transparent 30%),
+        linear-gradient(180deg, #111, #050505 20%, #020202);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 36px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      justify-self: center;
+    }
+
+    .safe-top {
+      padding: max(18px, env(safe-area-inset-top)) 20px 10px;
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--gold-soft);
+      color: var(--gold);
+      font-size: 12px;
+      border: 1px solid rgba(255,215,0,0.18);
+    }
+
+    .content {
+      padding: 12px 16px 110px;
+    }
+
+    .page {
+      display: none;
+      gap: 14px;
+      flex-direction: column;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 16px;
+    }
+
+    .hero-value {
+      font-size: 34px;
+      font-weight: 700;
+      margin: 8px 0 6px;
+      color: var(--gold);
+      line-height: 1.1;
+      word-break: break-word;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .metric {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .neutral { color: var(--yellow); }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 200px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, textarea, button {
+      font: inherit;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 14px;
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(255,215,0,0.35);
+      box-shadow: 0 0 0 1px rgba(255,215,0,0.2);
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, #ffe27a, #ffd700);
+      color: #111;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .table-btn {
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+    }
+
+    .table-btn.edit {
+      background: rgba(255, 215, 0, 0.12);
+      color: var(--gold);
+    }
+
+    .table-btn.delete {
+      background: rgba(239, 68, 68, 0.14);
+      color: #ff9f9f;
+    }
+
+    .inline-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--gold);
+      background: rgba(255,215,0,0.06);
+    }
+
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      width: fit-content;
+    }
+
+    .signal-buy { background: rgba(34,197,94,0.14); color: var(--green); }
+    .signal-sell { background: rgba(239,68,68,0.14); color: var(--red); }
+    .signal-hold { background: rgba(234,179,8,0.14); color: var(--yellow); }
+
+    .bottom-nav {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 10px;
+      background: rgba(20,20,20,0.86);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+    }
+
+    .nav-btn {
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 6px;
+      border-radius: 16px;
+      border: 0;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .nav-btn.active {
+      color: var(--gold);
+      background: rgba(255,215,0,0.12);
+    }
+
+    .last-updated {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .settings-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 881px) {
+      .content {
+        padding: 12px 18px 118px;
+      }
+
+      .page.active {
+        display: grid;
+      }
+
+      #page-home.active,
+      #page-signal.active,
+      #page-settings.active,
+      #page-dca.active {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      #page-portfolio.active {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .desktop-panel {
+        order: 2;
+        padding: 0;
+      }
+
+      .phone {
+        min-height: 860px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .grid.two,
+      .grid.four,
+      .desktop-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .app-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .badge {
+        align-self: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 0; }
+      .app-shell {
+        gap: 0;
+      }
+
+      .desktop-panel {
+        display: none;
+      }
+
+      .phone {
+        max-width: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+      }
+
+      .content {
+        padding: 12px 14px 110px;
+      }
+
+      .hero-value {
+        font-size: 30px;
+      }
+
+      .metric {
+        font-size: 20px;
+      }
+
+      .bottom-nav {
+        left: 8px;
+        right: 8px;
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .nav-btn {
+        font-size: 11px;
+        padding: 10px 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="desktop-panel">
+      <div class="desktop-card">
+        <p class="desktop-title">DCA SAVINGS TRADING PRO</p>
+        <p class="desktop-copy">
+          Premium Bitcoin DCA dashboard with portfolio tracking, manual entry, live BTC pricing, and AI signal workflow.
+        </p>
+        <div class="desktop-stats">
+          <div>
+            <div class="desktop-stat-label">Responsive</div>
+            <div class="desktop-stat-value">Mobile + Desktop</div>
+          </div>
+          <div>
+            <div class="desktop-stat-label">Theme</div>
+            <div class="desktop-stat-value">Dark Gold Trading UI</div>
+          </div>
+          <div>
+            <div class="desktop-stat-label">Price Source</div>
+            <div class="desktop-stat-value">CoinGecko API</div>
+          </div>
+          <div>
+            <div class="desktop-stat-label">Backend</div>
+            <div class="desktop-stat-value">Google Apps Script</div>
+          </div>
+        </div>
+      </div>
+      <div class="desktop-card">
+        <div class="section-title">Current Build Status</div>
+        <p class="desktop-copy">
+          Frontend shell is ready. Google Sheets sync and Claude signal integration will be connected in the next steps.
+        </p>
+      </div>
+    </aside>
+
+    <div class="phone">
+    <div class="safe-top">
+      <div class="app-header">
+        <div>
+          <div class="subtle">Premium DCA Dashboard</div>
+          <div class="app-title">DCA SAVINGS TRADING PRO</div>
+        </div>
+        <div class="badge" id="globalUpdated">Last updated --:--:--</div>
+      </div>
+    </div>
+
+    <main class="content">
+      <section class="page active" id="page-home">
+        <div class="card">
+          <div class="subtle">Total Portfolio</div>
+          <div class="hero-value" id="portfolioLak">LAK 0</div>
+          <div class="subtle" id="portfolioUsd">USD 0.00</div>
+          <div class="last-updated" id="portfolioSyncStatus">Sheet sync pending</div>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <div class="label">Current BTC Price</div>
+            <div class="metric" id="btcPrice">$0</div>
+            <div class="last-updated" id="btcUpdated">Last updated --:--:--</div>
+          </div>
+          <div class="card">
+            <div class="label">Today P&amp;L</div>
+            <div class="metric neutral" id="todayPnl">0.00%</div>
+            <div class="last-updated" id="pnlUpdated">Last updated --:--:--</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">BTC 7-Day Mini Chart</div>
+          <div class="chart-wrap">
+            <canvas id="miniChart"></canvas>
+          </div>
+          <div class="last-updated" id="chartUpdated">Last updated --:--:--</div>
+        </div>
+      </section>
+
+      <section class="page" id="page-portfolio">
+        <div class="grid two">
+          <div class="card">
+            <div class="label">Total Invested</div>
+            <div class="metric" id="sumInvestLak">LAK 0</div>
+          </div>
+          <div class="card">
+            <div class="label">Total BTC</div>
+            <div class="metric" id="sumBtc">0.00000000</div>
+          </div>
+          <div class="card">
+            <div class="label">Current Value</div>
+            <div class="metric" id="sumCurrentValue">USD 0.00</div>
+          </div>
+          <div class="card">
+            <div class="label">Profit / Loss</div>
+            <div class="metric neutral" id="sumPnl">0.00%</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">DCA History</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Amount LAK</th>
+                  <th>Fee LAK</th>
+                  <th>USD After Fee</th>
+                  <th>BTC Price USD</th>
+                  <th>BTC Received</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="portfolioTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">BTC Price vs DCA Points</div>
+          <div class="chart-wrap">
+            <canvas id="portfolioChart"></canvas>
+          </div>
+          <div class="last-updated" id="portfolioChartUpdated">Last updated --:--:--</div>
+        </div>
+      </section>
+
+      <section class="page" id="page-dca">
+        <div class="card">
+          <div class="section-title">Add DCA Record</div>
+          <div class="last-updated" id="formMode">Mode: Create</div>
+          <input type="hidden" id="editRecordId" />
+
+          <div class="input-group">
+            <label class="label" for="dcaDate">Purchase Date</label>
+            <input type="date" id="dcaDate" />
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="amountLak">DCA Amount (LAK)</label>
+            <input type="number" id="amountLak" placeholder="e.g. 1000000" />
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="feeLak">Fee (LAK)</label>
+            <input type="number" id="feeLak" placeholder="e.g. 10000" />
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="usdRate">LAK / USD Exchange Rate</label>
+            <input type="number" id="usdRate" placeholder="e.g. 22000" />
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="btcBuyPrice">BTC Buy Price (USD)</label>
+            <input type="number" id="btcBuyPrice" placeholder="Auto-filled or enter manually" />
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="btcReceived">BTC Received</label>
+            <input type="text" id="btcReceived" readonly />
+          </div>
+
+          <div class="input-group">
+            <label class="label" for="dcaNote">Note</label>
+            <textarea id="dcaNote" rows="3" placeholder="e.g. Monthly DCA"></textarea>
+          </div>
+
+          <div class="inline-actions">
+            <button id="saveDcaBtn">Save to Google Sheets</button>
+            <button type="button" class="secondary" id="cancelEditBtn">Cancel Edit</button>
+          </div>
+          <div class="last-updated" id="dcaStatus">Not saved yet</div>
+        </div>
+      </section>
+
+      <section class="page" id="page-signal">
+        <div class="card">
+          <div class="section-title">Claude AI Signal</div>
+          <div id="signalBadge" class="signal-pill signal-hold">HOLD</div>
+          <div class="hero-value" id="signalConfidence">0%</div>
+          <div class="subtle" id="signalReason">No analysis yet</div>
+          <div class="subtle" id="signalExtra">RSI: - | DCA advice: -</div>
+          <div class="last-updated" id="signalUpdated">Last updated --:--:--</div>
+          <div style="margin-top: 14px;">
+            <button id="analyzeBtn">Analyze Again</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-settings">
+        <div class="card">
+          <div class="section-title">Settings</div>
+          <div class="settings-list">
+            <div>
+              <div class="label">Apps Script URL</div>
+              <input type="text" id="scriptUrl" placeholder="Paste your deployed Apps Script Web App URL" />
+            </div>
+            <div>
+              <div class="label">Claude API Key</div>
+              <input type="password" id="claudeApiKey" placeholder="Will be added in Step 6" />
+            </div>
+            <div>
+              <div class="label">Monthly Target (LAK)</div>
+              <input type="number" id="monthlyTargetLak" value="2000000" />
+            </div>
+            <div>
+              <div class="label">Public App Access</div>
+              <input type="text" id="publicAppUrl" placeholder="Add your Netlify or GitHub Pages URL after deploy" />
+            </div>
+            <button class="secondary" id="saveSettingsBtn">Save Settings in Browser</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="home">Home</button>
+      <button class="nav-btn" data-page="portfolio">Portfolio</button>
+      <button class="nav-btn" data-page="dca">DCA</button>
+      <button class="nav-btn" data-page="signal">Signal</button>
+      <button class="nav-btn" data-page="settings">Settings</button>
+    </nav>
+  </div>
+  </div>
+
+  <script>
+    const state = {
+      btcPrice: 0,
+      btcHistory: [],
+      records: [],
+      summary: {
+        totalInvestLak: 0,
+        totalNetLak: 0,
+        totalBtc: 0,
+        totalUsdAfterFee: 0,
+        avgCostLak: 0
+      },
+      signal: null,
+      lastSyncAt: null,
+      lastMarketAt: null,
+      lastChartAt: null,
+      editingRecordId: ""
+    };
+
+    let miniChart = null;
+    let portfolioChart = null;
+
+    function formatLak(num) {
+      return "LAK " + Number(num || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+    }
+
+    function formatUsd(num) {
+      return "USD " + Number(num || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatPrice(num) {
+      return "$" + Number(num || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatTime(date = new Date()) {
+      return date.toLocaleTimeString("en-GB");
+    }
+
+    function updateGlobalTimestamp() {
+      document.getElementById("globalUpdated").textContent = "Last updated " + formatTime();
+    }
+
+    function renderSyncBadges() {
+      document.getElementById("portfolioSyncStatus").textContent = state.lastSyncAt
+        ? `Sheet synced at ${formatTime(state.lastSyncAt)}`
+        : "Sheet sync pending";
+
+      const chartStatus = state.lastChartAt
+        ? `Last updated ${formatTime(state.lastChartAt)}`
+        : "Last updated --:--:--";
+
+      document.getElementById("chartUpdated").textContent = chartStatus;
+      document.getElementById("portfolioChartUpdated").textContent = chartStatus;
+    }
+
+    function updateStatus(elementId, message) {
+      document.getElementById(elementId).textContent = message;
+    }
+
+    function getScriptUrl() {
+      return document.getElementById("scriptUrl").value.trim() || localStorage.getItem("script_url") || "";
+    }
+
+    function requireScriptUrl() {
+      const scriptUrl = getScriptUrl();
+      if (!scriptUrl) {
+        throw new Error("Please paste your Apps Script Web App URL in Settings first.");
+      }
+      return scriptUrl;
+    }
+
+    function switchPage(page) {
+      document.querySelectorAll(".page").forEach((el) => {
+        el.classList.toggle("active", el.id === `page-${page}`);
+      });
+      document.querySelectorAll(".nav-btn").forEach((el) => {
+        el.classList.toggle("active", el.dataset.page === page);
+      });
+    }
+
+    function bindNavigation() {
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.addEventListener("click", () => switchPage(btn.dataset.page));
+      });
+    }
+
+    function buildScriptUrl(action, params = {}) {
+      const scriptUrl = requireScriptUrl();
+      const url = new URL(scriptUrl);
+      url.searchParams.set("action", action);
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+      return url;
+    }
+
+    function apiJsonp(action = "all", params = {}) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `jsonpCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const url = buildScriptUrl(action, { ...params, callback: callbackName });
+        const script = document.createElement("script");
+
+        const cleanup = () => {
+          delete window[callbackName];
+          script.remove();
+        };
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error(`Request timeout for action: ${action}`));
+        }, 15000);
+
+        window[callbackName] = (payload) => {
+          clearTimeout(timer);
+          cleanup();
+
+          if (!payload || payload.success !== true) {
+            reject(new Error(payload?.error || `Request failed for action: ${action}`));
+            return;
+          }
+
+          resolve(payload.data);
+        };
+
+        script.onerror = () => {
+          clearTimeout(timer);
+          cleanup();
+          reject(new Error(`Unable to load Apps Script endpoint for action: ${action}`));
+        };
+
+        script.src = url.toString();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function fetchBTCPrice() {
+      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+      if (!res.ok) {
+        throw new Error("Failed to load BTC price");
+      }
+      const data = await res.json();
+      state.btcPrice = data?.bitcoin?.usd || 0;
+      state.lastMarketAt = new Date();
+      document.getElementById("btcPrice").textContent = formatPrice(state.btcPrice);
+      document.getElementById("btcUpdated").textContent = "Last updated " + formatTime(state.lastMarketAt);
+      updateGlobalTimestamp();
+    }
+
+    async function fetchBTCChart() {
+      const res = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily");
+      if (!res.ok) {
+        throw new Error("Failed to load BTC chart");
+      }
+      const data = await res.json();
+      state.btcHistory = (data.prices || []).map((item) => ({
+        time: new Date(item[0]),
+        price: item[1]
+      }));
+      state.lastChartAt = new Date();
+      renderMiniChart();
+      renderPortfolioChart();
+      renderSyncBadges();
+    }
+
+    function renderMiniChart() {
+      const ctx = document.getElementById("miniChart").getContext("2d");
+      const labels = state.btcHistory.map((p) =>
+        p.time.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })
+      );
+      const values = state.btcHistory.map((p) => p.price);
+
+      if (miniChart) {
+        miniChart.destroy();
+      }
+
+      miniChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            borderColor: "#FFD700",
+            backgroundColor: "rgba(255,215,0,0.12)",
+            tension: 0.35,
+            fill: true,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#9a9a9a" },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: "#9a9a9a" },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPortfolioChart() {
+      const ctx = document.getElementById("portfolioChart").getContext("2d");
+      const labels = state.btcHistory.map((p) =>
+        p.time.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })
+      );
+      const priceData = state.btcHistory.map((p) => p.price);
+
+      if (portfolioChart) {
+        portfolioChart.destroy();
+      }
+
+      portfolioChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "BTC Price",
+            data: priceData,
+            borderColor: "#FFD700",
+            backgroundColor: "rgba(255,215,0,0.08)",
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#f5f5f5" }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#9a9a9a" },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: "#9a9a9a" },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            }
+          }
+        }
+      });
+    }
+
+    function calculateBtcReceived() {
+      const amountLak = Number(document.getElementById("amountLak").value || 0);
+      const feeLak = Number(document.getElementById("feeLak").value || 0);
+      const usdRate = Number(document.getElementById("usdRate").value || 0);
+      const btcPriceUsd = Number(document.getElementById("btcBuyPrice").value || 0);
+
+      const netLak = amountLak - feeLak;
+      const usdAfterFee = usdRate > 0 ? netLak / usdRate : 0;
+      const btcReceived = btcPriceUsd > 0 ? usdAfterFee / btcPriceUsd : 0;
+
+      document.getElementById("btcReceived").value = btcReceived.toFixed(8);
+    }
+
+    function bindDcaInputs() {
+      ["amountLak", "feeLak", "usdRate", "btcBuyPrice"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", calculateBtcReceived);
+      });
+    }
+
+    function seedDefaults() {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("dcaDate").value = today;
+      document.getElementById("btcBuyPrice").value = state.btcPrice || "";
+      document.getElementById("usdRate").value = localStorage.getItem("monthly_usd_rate") || 22000;
+      document.getElementById("feeLak").value = localStorage.getItem("default_fee_lak") || 0;
+      document.getElementById("monthlyTargetLak").value = localStorage.getItem("monthly_target_lak") || 2000000;
+      document.getElementById("scriptUrl").value = localStorage.getItem("script_url") || "";
+      document.getElementById("claudeApiKey").value = localStorage.getItem("claude_api_key") || "";
+      document.getElementById("publicAppUrl").value = localStorage.getItem("public_app_url") || "";
+      calculateBtcReceived();
+      setFormMode("create");
+    }
+
+    function saveSettings() {
+      localStorage.setItem("script_url", document.getElementById("scriptUrl").value.trim());
+      localStorage.setItem("claude_api_key", document.getElementById("claudeApiKey").value.trim());
+      localStorage.setItem("monthly_target_lak", document.getElementById("monthlyTargetLak").value.trim());
+      localStorage.setItem("monthly_usd_rate", document.getElementById("usdRate").value.trim());
+      localStorage.setItem("default_fee_lak", document.getElementById("feeLak").value.trim());
+      localStorage.setItem("public_app_url", document.getElementById("publicAppUrl").value.trim());
+      alert("Settings saved in this browser.");
+    }
+
+    function setFormMode(mode, record = null) {
+      const saveBtn = document.getElementById("saveDcaBtn");
+      const formMode = document.getElementById("formMode");
+      const editRecordId = document.getElementById("editRecordId");
+
+      if (mode === "edit" && record) {
+        state.editingRecordId = record.ID || "";
+        editRecordId.value = state.editingRecordId;
+        formMode.textContent = `Mode: Edit ${state.editingRecordId}`;
+        saveBtn.textContent = "Update Record";
+        document.getElementById("dcaDate").value = record.DATE || "";
+        document.getElementById("amountLak").value = Number(record.AMOUNT_LAK || 0);
+        document.getElementById("feeLak").value = Number(record.FEE_LAK || 0);
+        document.getElementById("usdRate").value = Number(record.USD_RATE || 0);
+        document.getElementById("btcBuyPrice").value = Number(record.BTC_PRICE_USD || 0);
+        document.getElementById("dcaNote").value = record.NOTE || "";
+        calculateBtcReceived();
+        switchPage("dca");
+        return;
+      }
+
+      state.editingRecordId = "";
+      editRecordId.value = "";
+      formMode.textContent = "Mode: Create";
+      saveBtn.textContent = "Save to Google Sheets";
+    }
+
+    function resetDcaForm() {
+      document.getElementById("amountLak").value = "";
+      document.getElementById("dcaNote").value = "";
+      document.getElementById("btcBuyPrice").value = state.btcPrice || "";
+      document.getElementById("dcaDate").value = new Date().toISOString().split("T")[0];
+      document.getElementById("feeLak").value = localStorage.getItem("default_fee_lak") || 0;
+      document.getElementById("usdRate").value = localStorage.getItem("monthly_usd_rate") || 22000;
+      setFormMode("create");
+      calculateBtcReceived();
+    }
+
+    function normalizeSummary(summary = {}) {
+      return {
+        totalInvestLak: Number(summary.totalInvestLak || 0),
+        totalNetLak: Number(summary.totalNetLak || 0),
+        totalBtc: Number(summary.totalBtc || 0),
+        totalUsdAfterFee: Number(summary.totalUsdAfterFee || 0),
+        avgCostLak: Number(summary.avgCostLak || 0)
+      };
+    }
+
+    function renderPortfolioTable() {
+      const tbody = document.getElementById("portfolioTable");
+      tbody.innerHTML = "";
+
+      state.records.forEach((record) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${record.ID || "-"}</td>
+          <td>${record.DATE || "-"}</td>
+          <td>${Number(record.AMOUNT_LAK || 0).toLocaleString()}</td>
+          <td>${Number(record.FEE_LAK || 0).toLocaleString()}</td>
+          <td>${Number(record.USD_AFTER_FEE || 0).toFixed(2)}</td>
+          <td>${Number(record.BTC_PRICE_USD || 0).toFixed(2)}</td>
+          <td>${Number(record.BTC_RECEIVED || 0).toFixed(8)}</td>
+          <td>
+            <div class="table-actions">
+              <button type="button" class="table-btn edit" data-edit-id="${record.ID || ""}">Edit</button>
+              <button type="button" class="table-btn delete" data-delete-id="${record.ID || ""}">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll("[data-edit-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const record = state.records.find((item) => item.ID === button.dataset.editId);
+          if (record) {
+            setFormMode("edit", record);
+          }
+        });
+      });
+
+      tbody.querySelectorAll("[data-delete-id]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          await deleteDcaRecord(button.dataset.deleteId);
+        });
+      });
+    }
+
+    function renderSummary() {
+      const totalBtc = Number(state.summary.totalBtc || 0);
+      const totalNetLak = Number(state.summary.totalNetLak || 0);
+      const currentUsd = totalBtc * Number(state.btcPrice || 0);
+      const approxCostUsd = Number(state.summary.totalUsdAfterFee || 0);
+      const pnlPercent = approxCostUsd > 0
+        ? ((currentUsd - approxCostUsd) / approxCostUsd) * 100
+        : 0;
+
+      document.getElementById("portfolioLak").textContent = formatLak(totalNetLak);
+      document.getElementById("portfolioUsd").textContent = formatUsd(currentUsd);
+      document.getElementById("sumInvestLak").textContent = formatLak(state.summary.totalInvestLak || 0);
+      document.getElementById("sumBtc").textContent = totalBtc.toFixed(8);
+      document.getElementById("sumCurrentValue").textContent = formatUsd(currentUsd);
+
+      const pnlClass = pnlPercent > 0 ? "positive" : pnlPercent < 0 ? "negative" : "neutral";
+
+      const pnlEl = document.getElementById("sumPnl");
+      pnlEl.textContent = pnlPercent.toFixed(2) + "%";
+      pnlEl.className = "metric " + pnlClass;
+
+      const homePnl = document.getElementById("todayPnl");
+      homePnl.textContent = pnlPercent.toFixed(2) + "%";
+      homePnl.className = "metric " + pnlClass;
+
+      document.getElementById("pnlUpdated").textContent = "Last updated " + formatTime();
+      renderSyncBadges();
+    }
+
+    function renderSignal() {
+      const signal = state.signal;
+      const badge = document.getElementById("signalBadge");
+      const confidenceEl = document.getElementById("signalConfidence");
+      const reasonEl = document.getElementById("signalReason");
+      const extraEl = document.getElementById("signalExtra");
+      const updatedEl = document.getElementById("signalUpdated");
+
+      if (!signal) {
+        badge.className = "signal-pill signal-hold";
+        badge.textContent = "HOLD";
+        confidenceEl.textContent = "0%";
+        reasonEl.textContent = "No signal saved yet";
+        extraEl.textContent = "RSI: - | DCA advice: -";
+        updatedEl.textContent = "Last updated --:--:--";
+        return;
+      }
+
+      const signalText = String(signal.SIGNAL || signal.signal || "HOLD").toUpperCase();
+      const signalClass = signalText === "BUY"
+        ? "signal-buy"
+        : signalText === "SELL"
+          ? "signal-sell"
+          : "signal-hold";
+
+      badge.className = `signal-pill ${signalClass}`;
+      badge.textContent = signalText;
+      confidenceEl.textContent = `${Number(signal.CONFIDENCE || signal.confidence || 0).toFixed(0)}%`;
+      reasonEl.textContent = signal.REASON_TH || signal.reason || "No reason";
+      extraEl.textContent = `RSI: ${signal.RSI_INTERPRETATION || "-"} | DCA advice: ${signal.DCA_ADVICE || "-"}`;
+
+      const rawTime = signal.TIMESTAMP || signal.timestamp || "";
+      updatedEl.textContent = rawTime
+        ? `Last updated ${new Date(rawTime).toLocaleString("en-GB")}`
+        : "Last updated " + formatTime();
+    }
+
+    async function loadSheetData() {
+      const scriptUrl = getScriptUrl();
+      if (!scriptUrl) {
+        renderPortfolioTable();
+        renderSummary();
+        renderSignal();
+        renderSyncBadges();
+        updateStatus("dcaStatus", "Paste your Apps Script URL in Settings to enable sync");
+        return;
+      }
+
+      updateStatus("dcaStatus", "Syncing data from Google Sheets...");
+
+      const data = await apiJsonp("all");
+      state.records = Array.isArray(data.records) ? data.records : [];
+      state.summary = normalizeSummary(data.summary || {});
+      state.signal = data.lastSignal || null;
+      state.lastSyncAt = new Date();
+
+      renderPortfolioTable();
+      renderSummary();
+      renderSignal();
+      renderSyncBadges();
+      updateStatus("dcaStatus", `Google Sheets synced at ${formatTime(state.lastSyncAt)}`);
+    }
+
+    async function saveDCARecord() {
+      try {
+        const editingId = state.editingRecordId;
+        const date = document.getElementById("dcaDate").value;
+        const amountLak = Number(document.getElementById("amountLak").value || 0);
+        const feeLak = Number(document.getElementById("feeLak").value || 0);
+        const usdRate = Number(document.getElementById("usdRate").value || 0);
+        const btcPriceUsd = Number(document.getElementById("btcBuyPrice").value || 0);
+        const note = document.getElementById("dcaNote").value.trim();
+
+        if (!date) {
+          throw new Error("Purchase date is required.");
+        }
+        if (amountLak <= 0) {
+          throw new Error("DCA amount must be greater than 0.");
+        }
+        if (usdRate <= 0) {
+          throw new Error("Exchange rate must be greater than 0.");
+        }
+        if (btcPriceUsd <= 0) {
+          throw new Error("BTC buy price must be greater than 0.");
+        }
+
+        updateStatus("dcaStatus", editingId ? "Updating DCA record..." : "Saving DCA record to Google Sheets...");
+
+        const payload = {
+          date,
+          amountLak,
+          feeLak,
+          usdRate,
+          btcPriceUsd,
+          source: "WEB_APP",
+          note
+        };
+
+        if (editingId) {
+          payload.id = editingId;
+          await apiJsonp("updateDCA", payload);
+        } else {
+          await apiJsonp("saveDCA", payload);
+        }
+
+        await loadSheetData();
+        resetDcaForm();
+        updateStatus("dcaStatus", `${editingId ? "Updated" : "Saved"} successfully at ${formatTime()}`);
+      } catch (error) {
+        console.error(error);
+        updateStatus("dcaStatus", error.message);
+      }
+    }
+
+    async function deleteDcaRecord(recordId) {
+      try {
+        if (!recordId) {
+          throw new Error("Missing record ID for delete.");
+        }
+
+        const confirmed = window.confirm(`Delete record ${recordId}?`);
+        if (!confirmed) {
+          return;
+        }
+
+        updateStatus("dcaStatus", `Deleting ${recordId}...`);
+        await apiJsonp("deleteDCA", { id: recordId });
+        await loadSheetData();
+
+        if (state.editingRecordId === recordId) {
+          resetDcaForm();
+        }
+
+        updateStatus("dcaStatus", `Deleted ${recordId} at ${formatTime()}`);
+      } catch (error) {
+        console.error(error);
+        updateStatus("dcaStatus", error.message);
+      }
+    }
+
+    async function callClaudeSignal() {
+      document.getElementById("signalReason").textContent = "Claude API will be connected in Step 6";
+      document.getElementById("signalUpdated").textContent = "Last updated " + formatTime();
+    }
+
+    function bindActions() {
+      document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
+      document.getElementById("saveDcaBtn").addEventListener("click", saveDCARecord);
+      document.getElementById("cancelEditBtn").addEventListener("click", resetDcaForm);
+      document.getElementById("analyzeBtn").addEventListener("click", callClaudeSignal);
+    }
+
+    function showLoadError(message) {
+      document.getElementById("btcPrice").textContent = "Unavailable";
+      document.getElementById("signalReason").textContent = message;
+      updateStatus("dcaStatus", message);
+      updateGlobalTimestamp();
+    }
+
+    async function init() {
+      bindNavigation();
+      bindDcaInputs();
+      bindActions();
+
+      try {
+        await Promise.all([fetchBTCPrice(), fetchBTCChart()]);
+      } catch (error) {
+        console.error(error);
+        showLoadError("Unable to load live market data. If you opened the file directly, use a local web server.");
+      }
+
+      seedDefaults();
+      renderSignal();
+      renderPortfolioTable();
+      renderSummary();
+      renderSyncBadges();
+
+      try {
+        await loadSheetData();
+      } catch (error) {
+        console.error(error);
+        updateStatus("dcaStatus", error.message);
+      }
+
+      setInterval(async () => {
+        try {
+          await fetchBTCPrice();
+          renderSummary();
+        } catch (error) {
+          console.error(error);
+        }
+      }, 60000);
+
+      setInterval(async () => {
+        try {
+          await fetchBTCChart();
+        } catch (error) {
+          console.error(error);
+        }
+      }, 300000);
+
+      setInterval(async () => {
+        try {
+          if (getScriptUrl()) {
+            await loadSheetData();
+          }
+        } catch (error) {
+          console.error(error);
+          updateStatus("dcaStatus", error.message);
+        }
+      }, 90000);
+    }
+
+    init();
+  </script>
+</body>
+</html>

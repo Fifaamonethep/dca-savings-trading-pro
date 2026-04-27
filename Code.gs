@@ -67,6 +67,20 @@ function doGet(e) {
           getParam(e, 'pnlPercent', 0)
         )
       };
+    } else if (action === 'analyzeSignal') {
+      payload = {
+        success: true,
+        message: 'Signal analyzed',
+        data: analyzeAndSaveSignal({
+          price: getParam(e, 'price', 0),
+          priceHistory: getParam(e, 'priceHistory', '[]'),
+          rsi: getParam(e, 'rsi', 0),
+          avgCostLak: getParam(e, 'avgCostLak', 0),
+          totalBtc: getParam(e, 'totalBtc', 0),
+          pnlPercent: getParam(e, 'pnlPercent', 0),
+          monthlyTargetLak: getParam(e, 'monthlyTargetLak', 0)
+        })
+      };
     } else {
       payload = {
         success: true,
@@ -292,6 +306,122 @@ function saveSignal(signal, confidence, reason, rsiInterpretation, dcaAdvice, ra
   ]);
 
   return { id: id, timestamp: timestamp };
+}
+
+function analyzeAndSaveSignal(context) {
+  const props = PropertiesService.getScriptProperties();
+  const apiKey = props.getProperty('ANTHROPIC_API_KEY');
+  const model = props.getProperty('ANTHROPIC_MODEL') || 'claude-sonnet-4-20250514';
+
+  if (!apiKey) {
+    throw new Error('Missing ANTHROPIC_API_KEY in Script Properties');
+  }
+
+  const priceHistory = parseJsonArray(context.priceHistory);
+  const systemPrompt = 'You are a DCA Bitcoin trading advisor. Analyze the given market data and portfolio context. Respond ONLY in JSON format with keys signal, confidence, reason, rsi_interpretation, dca_advice.';
+  const userPrompt =
+    'BTC current price: ' + context.price + ' usd\n' +
+    '7-day price history: ' + JSON.stringify(priceHistory) + '\n' +
+    'RSI (14): ' + context.rsi + '\n' +
+    'My DCA average cost: ' + context.avgCostLak + ' LAK\n' +
+    'Current profit/loss: ' + context.pnlPercent + '%\n' +
+    'Monthly DCA target: ' + context.monthlyTargetLak + ' LAK\n\n' +
+    'Analyze and return signal with Thai reason.';
+
+  const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    payload: JSON.stringify({
+      model: model,
+      max_tokens: 300,
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ]
+    }),
+    muteHttpExceptions: true
+  });
+
+  const status = response.getResponseCode();
+  const text = response.getContentText();
+  if (status < 200 || status >= 300) {
+    throw new Error('Anthropic API error: ' + status + ' ' + text);
+  }
+
+  const apiPayload = JSON.parse(text);
+  const contentText = extractAnthropicText(apiPayload);
+  const signalPayload = extractSignalJson(contentText);
+
+  saveSignal(
+    signalPayload.signal,
+    signalPayload.confidence,
+    signalPayload.reason,
+    signalPayload.rsi_interpretation,
+    signalPayload.dca_advice,
+    JSON.stringify(signalPayload),
+    context.price,
+    context.rsi,
+    context.avgCostLak,
+    context.totalBtc,
+    context.pnlPercent
+  );
+
+  return signalPayload;
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function extractAnthropicText(apiPayload) {
+  if (!apiPayload || !apiPayload.content || !apiPayload.content.length) {
+    throw new Error('Claude response did not contain content');
+  }
+
+  var text = '';
+  apiPayload.content.forEach(function(block) {
+    if (block.type === 'text') {
+      text += block.text;
+    }
+  });
+
+  if (!text) {
+    throw new Error('Claude response text was empty');
+  }
+
+  return text;
+}
+
+function extractSignalJson(text) {
+  var cleaned = String(text || '').trim();
+  var firstBrace = cleaned.indexOf('{');
+  var lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+    throw new Error('Claude response was not valid JSON: ' + cleaned);
+  }
+
+  var jsonText = cleaned.substring(firstBrace, lastBrace + 1);
+  var payload = JSON.parse(jsonText);
+
+  return {
+    signal: String(payload.signal || 'HOLD').toUpperCase(),
+    confidence: toNumber(payload.confidence),
+    reason: String(payload.reason || ''),
+    rsi_interpretation: String(payload.rsi_interpretation || ''),
+    dca_advice: String(payload.dca_advice || '')
+  };
 }
 
 function rowToObject(headers, row) {

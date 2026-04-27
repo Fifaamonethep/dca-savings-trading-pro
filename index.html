@@ -735,6 +735,10 @@
       return date.toLocaleTimeString("en-GB");
     }
 
+    function roundNumber(value, digits = 2) {
+      return Number(Number(value || 0).toFixed(digits));
+    }
+
     function updateGlobalTimestamp() {
       document.getElementById("globalUpdated").textContent = "Last updated " + formatTime();
     }
@@ -903,6 +907,34 @@
           }
         }
       });
+    }
+
+    function calculateRsi(prices, period = 14) {
+      if (!Array.isArray(prices) || prices.length <= period) {
+        return 50;
+      }
+
+      let gains = 0;
+      let losses = 0;
+
+      for (let i = prices.length - period; i < prices.length; i += 1) {
+        const diff = Number(prices[i]) - Number(prices[i - 1]);
+        if (diff >= 0) {
+          gains += diff;
+        } else {
+          losses += Math.abs(diff);
+        }
+      }
+
+      const avgGain = gains / period;
+      const avgLoss = losses / period;
+
+      if (avgLoss === 0) {
+        return 100;
+      }
+
+      const rs = avgGain / avgLoss;
+      return roundNumber(100 - (100 / (1 + rs)), 2);
     }
 
     function renderPortfolioChart() {
@@ -1252,8 +1284,54 @@
     }
 
     async function callClaudeSignal() {
-      document.getElementById("signalReason").textContent = "Claude API will be connected in Step 6";
-      document.getElementById("signalUpdated").textContent = "Last updated " + formatTime();
+      try {
+        if (!state.btcHistory.length) {
+          await fetchBTCChart();
+        }
+
+        const priceHistory = state.btcHistory.map((item) => roundNumber(item.price, 2));
+        const rsi = calculateRsi(priceHistory);
+        const totalBtc = Number(state.summary.totalBtc || 0);
+        const currentUsd = totalBtc * Number(state.btcPrice || 0);
+        const approxCostUsd = Number(state.summary.totalUsdAfterFee || 0);
+        const pnlPercent = approxCostUsd > 0
+          ? roundNumber(((currentUsd - approxCostUsd) / approxCostUsd) * 100, 2)
+          : 0;
+
+        document.getElementById("signalReason").textContent = "Analyzing with Claude...";
+        document.getElementById("signalUpdated").textContent = "Last updated " + formatTime();
+
+        const signalData = await apiJsonp("analyzeSignal", {
+          price: roundNumber(state.btcPrice, 2),
+          priceHistory: JSON.stringify(priceHistory),
+          rsi,
+          avgCostLak: roundNumber(state.summary.avgCostLak || 0, 2),
+          totalBtc: roundNumber(totalBtc, 8),
+          pnlPercent,
+          monthlyTargetLak: Number(document.getElementById("monthlyTargetLak").value || 0)
+        });
+
+        state.signal = {
+          SIGNAL: signalData.signal,
+          CONFIDENCE: signalData.confidence,
+          REASON_TH: signalData.reason,
+          RSI_INTERPRETATION: signalData.rsi_interpretation,
+          DCA_ADVICE: signalData.dca_advice,
+          TIMESTAMP: new Date().toISOString()
+        };
+
+        renderSignal();
+
+        try {
+          await loadSheetData();
+        } catch (error) {
+          console.error(error);
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById("signalReason").textContent = error.message;
+        document.getElementById("signalUpdated").textContent = "Last updated " + formatTime();
+      }
     }
 
     function bindActions() {

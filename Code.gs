@@ -1,6 +1,7 @@
 const SHEET_DCA = 'DCA_LOG';
 const SHEET_SIGNAL = 'SIGNAL_LOG';
 const SHEET_CONFIG = 'CONFIG';
+const SHEET_AI_LOG = 'AI_CHAT_LOG';
 
 function doGet(e) {
   try {
@@ -67,18 +68,21 @@ function doGet(e) {
           getParam(e, 'pnlPercent', 0)
         )
       };
-    } else if (action === 'analyzeSignal') {
+    } else if (action === 'saveAiChatLog') {
       payload = {
         success: true,
-        message: 'Signal analyzed',
-        data: analyzeAndSaveSignal({
-          price: getParam(e, 'price', 0),
-          priceHistory: getParam(e, 'priceHistory', '[]'),
-          rsi: getParam(e, 'rsi', 0),
-          avgCostLak: getParam(e, 'avgCostLak', 0),
+        message: 'AI chat log saved',
+        data: saveAiChatLog({
+          question: getParam(e, 'question', ''),
+          category: getParam(e, 'category', ''),
+          confidence: getParam(e, 'confidence', 0),
+          answer: getParam(e, 'answer', ''),
+          warnings: getParam(e, 'warnings', ''),
+          btcPriceUsd: getParam(e, 'btcPriceUsd', 0),
+          rsi14: getParam(e, 'rsi14', 0),
           totalBtc: getParam(e, 'totalBtc', 0),
-          pnlPercent: getParam(e, 'pnlPercent', 0),
-          monthlyTargetLak: getParam(e, 'monthlyTargetLak', 0)
+          avgCostLak: getParam(e, 'avgCostLak', 0),
+          pnlPercent: getParam(e, 'pnlPercent', 0)
         })
       };
     } else {
@@ -308,120 +312,52 @@ function saveSignal(signal, confidence, reason, rsiInterpretation, dcaAdvice, ra
   return { id: id, timestamp: timestamp };
 }
 
-function analyzeAndSaveSignal(context) {
-  const props = PropertiesService.getScriptProperties();
-  const apiKey = props.getProperty('ANTHROPIC_API_KEY');
-  const model = props.getProperty('ANTHROPIC_MODEL') || 'claude-sonnet-4-20250514';
+function saveAiChatLog(data) {
+  const sheet = getOrCreateAiLogSheet();
+  const id = generateId('AI', sheet.getLastRow());
+  const timestamp = new Date();
 
-  if (!apiKey) {
-    throw new Error('Missing ANTHROPIC_API_KEY in Script Properties');
-  }
+  sheet.appendRow([
+    id,
+    timestamp,
+    data.question || '',
+    data.category || '',
+    toNumber(data.confidence),
+    data.answer || '',
+    data.warnings || '',
+    toNumber(data.btcPriceUsd),
+    toNumber(data.rsi14),
+    toNumber(data.totalBtc),
+    toNumber(data.avgCostLak),
+    toNumber(data.pnlPercent)
+  ]);
 
-  const priceHistory = parseJsonArray(context.priceHistory);
-  const systemPrompt = 'You are a DCA Bitcoin trading advisor. Analyze the given market data and portfolio context. Respond ONLY in JSON format with keys signal, confidence, reason, rsi_interpretation, dca_advice.';
-  const userPrompt =
-    'BTC current price: ' + context.price + ' usd\n' +
-    '7-day price history: ' + JSON.stringify(priceHistory) + '\n' +
-    'RSI (14): ' + context.rsi + '\n' +
-    'My DCA average cost: ' + context.avgCostLak + ' LAK\n' +
-    'Current profit/loss: ' + context.pnlPercent + '%\n' +
-    'Monthly DCA target: ' + context.monthlyTargetLak + ' LAK\n\n' +
-    'Analyze and return signal with Thai reason.';
-
-  const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    payload: JSON.stringify({
-      model: model,
-      max_tokens: 300,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ]
-    }),
-    muteHttpExceptions: true
-  });
-
-  const status = response.getResponseCode();
-  const text = response.getContentText();
-  if (status < 200 || status >= 300) {
-    throw new Error('Anthropic API error: ' + status + ' ' + text);
-  }
-
-  const apiPayload = JSON.parse(text);
-  const contentText = extractAnthropicText(apiPayload);
-  const signalPayload = extractSignalJson(contentText);
-
-  saveSignal(
-    signalPayload.signal,
-    signalPayload.confidence,
-    signalPayload.reason,
-    signalPayload.rsi_interpretation,
-    signalPayload.dca_advice,
-    JSON.stringify(signalPayload),
-    context.price,
-    context.rsi,
-    context.avgCostLak,
-    context.totalBtc,
-    context.pnlPercent
-  );
-
-  return signalPayload;
+  return { id: id, timestamp: timestamp };
 }
 
-function parseJsonArray(value) {
-  try {
-    const parsed = JSON.parse(value || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
-}
+function getOrCreateAiLogSheet() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = spreadsheet.getSheetByName(SHEET_AI_LOG);
 
-function extractAnthropicText(apiPayload) {
-  if (!apiPayload || !apiPayload.content || !apiPayload.content.length) {
-    throw new Error('Claude response did not contain content');
-  }
-
-  var text = '';
-  apiPayload.content.forEach(function(block) {
-    if (block.type === 'text') {
-      text += block.text;
-    }
-  });
-
-  if (!text) {
-    throw new Error('Claude response text was empty');
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(SHEET_AI_LOG);
+    sheet.appendRow([
+      'ID',
+      'TIMESTAMP',
+      'QUESTION',
+      'CATEGORY',
+      'CONFIDENCE',
+      'ANSWER',
+      'WARNINGS',
+      'BTC_PRICE_USD',
+      'RSI_14',
+      'TOTAL_BTC',
+      'AVG_COST_LAK',
+      'PNL_PERCENT'
+    ]);
   }
 
-  return text;
-}
-
-function extractSignalJson(text) {
-  var cleaned = String(text || '').trim();
-  var firstBrace = cleaned.indexOf('{');
-  var lastBrace = cleaned.lastIndexOf('}');
-  if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
-    throw new Error('Claude response was not valid JSON: ' + cleaned);
-  }
-
-  var jsonText = cleaned.substring(firstBrace, lastBrace + 1);
-  var payload = JSON.parse(jsonText);
-
-  return {
-    signal: String(payload.signal || 'HOLD').toUpperCase(),
-    confidence: toNumber(payload.confidence),
-    reason: String(payload.reason || ''),
-    rsi_interpretation: String(payload.rsi_interpretation || ''),
-    dca_advice: String(payload.dca_advice || '')
-  };
+  return sheet;
 }
 
 function rowToObject(headers, row) {

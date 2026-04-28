@@ -335,7 +335,7 @@
       right: 12px;
       bottom: max(12px, env(safe-area-inset-bottom));
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 8px;
       padding: 10px;
       background: rgba(20,20,20,0.86);
@@ -368,6 +368,45 @@
     .settings-list {
       display: grid;
       gap: 12px;
+    }
+
+    .answer-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .answer-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .answer-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip-btn {
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .textarea-lg {
+      min-height: 120px;
+      resize: vertical;
     }
 
     @media (min-width: 881px) {
@@ -495,7 +534,7 @@
       <div class="desktop-card">
         <div class="section-title">Current Build Status</div>
         <p class="desktop-copy">
-          Frontend shell is ready. Google Sheets sync and Claude signal integration will be connected in the next steps.
+          Frontend shell is ready. Google Sheets sync, portfolio controls, and a built-in trading signal engine are included.
         </p>
       </div>
     </aside>
@@ -643,7 +682,7 @@
 
       <section class="page" id="page-signal">
         <div class="card">
-          <div class="section-title">Claude AI Signal</div>
+          <div class="section-title">Trading Signal</div>
           <div id="signalBadge" class="signal-pill signal-hold">HOLD</div>
           <div class="hero-value" id="signalConfidence">0%</div>
           <div class="subtle" id="signalReason">No analysis yet</div>
@@ -652,6 +691,58 @@
           <div style="margin-top: 14px;">
             <button id="analyzeBtn">Analyze Again</button>
           </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-ai">
+        <div class="card">
+          <div class="section-title">Ask Bitcoin AI</div>
+          <div class="subtle">Bitcoin, crypto, DCA, and portfolio-aware answers</div>
+
+          <div class="input-group" style="margin-top: 12px;">
+            <label class="label" for="aiQuestion">Your Question</label>
+            <textarea id="aiQuestion" class="textarea-lg" placeholder="Ask about Bitcoin, DCA, RSI, or your portfolio..."></textarea>
+          </div>
+
+          <div class="chip-row" id="aiPromptRow">
+            <button type="button" class="chip-btn" data-prompt="Is this a good DCA zone?">Is this a good DCA zone?</button>
+            <button type="button" class="chip-btn" data-prompt="Explain my current portfolio risk">Explain my current portfolio risk</button>
+            <button type="button" class="chip-btn" data-prompt="What does RSI mean right now?">What does RSI mean right now?</button>
+            <button type="button" class="chip-btn" data-prompt="Should I continue DCA this week?">Should I continue DCA this week?</button>
+          </div>
+
+          <div class="inline-actions" style="margin-top: 14px;">
+            <button id="askAiBtn">Ask AI</button>
+            <button type="button" class="secondary" id="clearAiBtn">Clear</button>
+          </div>
+          <div class="last-updated" id="aiStatus">Ready</div>
+        </div>
+
+        <div class="card answer-card">
+          <div class="section-title">AI Answer</div>
+          <div class="answer-meta">
+            <div>
+              <div class="label">Category</div>
+              <div class="metric" id="aiCategory">-</div>
+            </div>
+            <div>
+              <div class="label">Confidence</div>
+              <div class="metric" id="aiConfidence">0%</div>
+            </div>
+          </div>
+          <div>
+            <div class="label">Answer</div>
+            <div class="answer-text" id="aiAnswer">No answer yet.</div>
+          </div>
+          <div>
+            <div class="label">Warnings</div>
+            <div class="answer-text" id="aiWarnings">-</div>
+          </div>
+          <div>
+            <div class="label">Follow-ups</div>
+            <div class="chip-row" id="aiFollowups"></div>
+          </div>
+          <div class="last-updated" id="aiUpdated">Last updated --:--:--</div>
         </div>
       </section>
 
@@ -664,16 +755,16 @@
               <input type="text" id="scriptUrl" placeholder="Paste your deployed Apps Script Web App URL" />
             </div>
             <div>
-              <div class="label">Claude API Key</div>
-              <input type="password" id="claudeApiKey" placeholder="Will be added in Step 6" />
-            </div>
-            <div>
               <div class="label">Monthly Target (LAK)</div>
               <input type="number" id="monthlyTargetLak" value="2000000" />
             </div>
             <div>
               <div class="label">Public App Access</div>
               <input type="text" id="publicAppUrl" placeholder="Add your Netlify or GitHub Pages URL after deploy" />
+            </div>
+            <div>
+              <div class="label">AI Backend URL</div>
+              <input type="text" id="aiBackendUrl" placeholder="https://your-vercel-app.vercel.app/api/ask-crypto" />
             </div>
             <button class="secondary" id="saveSettingsBtn">Save Settings in Browser</button>
           </div>
@@ -686,6 +777,7 @@
       <button class="nav-btn" data-page="portfolio">Portfolio</button>
       <button class="nav-btn" data-page="dca">DCA</button>
       <button class="nav-btn" data-page="signal">Signal</button>
+      <button class="nav-btn" data-page="ai">AI</button>
       <button class="nav-btn" data-page="settings">Settings</button>
     </nav>
   </div>
@@ -762,6 +854,17 @@
 
     function getScriptUrl() {
       return document.getElementById("scriptUrl").value.trim() || localStorage.getItem("script_url") || "";
+    }
+
+    function getAiBackendUrl() {
+      const manual = document.getElementById("aiBackendUrl")?.value.trim() || localStorage.getItem("ai_backend_url") || "";
+      if (manual) {
+        return manual;
+      }
+      if (window.location.origin.startsWith("http")) {
+        return `${window.location.origin}/api/ask-crypto`;
+      }
+      return "";
     }
 
     function requireScriptUrl() {
@@ -1010,20 +1113,87 @@
       document.getElementById("feeLak").value = localStorage.getItem("default_fee_lak") || 0;
       document.getElementById("monthlyTargetLak").value = localStorage.getItem("monthly_target_lak") || 2000000;
       document.getElementById("scriptUrl").value = localStorage.getItem("script_url") || "";
-      document.getElementById("claudeApiKey").value = localStorage.getItem("claude_api_key") || "";
       document.getElementById("publicAppUrl").value = localStorage.getItem("public_app_url") || "";
+      document.getElementById("aiBackendUrl").value = localStorage.getItem("ai_backend_url") || "";
       calculateBtcReceived();
       setFormMode("create");
     }
 
     function saveSettings() {
       localStorage.setItem("script_url", document.getElementById("scriptUrl").value.trim());
-      localStorage.setItem("claude_api_key", document.getElementById("claudeApiKey").value.trim());
       localStorage.setItem("monthly_target_lak", document.getElementById("monthlyTargetLak").value.trim());
       localStorage.setItem("monthly_usd_rate", document.getElementById("usdRate").value.trim());
       localStorage.setItem("default_fee_lak", document.getElementById("feeLak").value.trim());
       localStorage.setItem("public_app_url", document.getElementById("publicAppUrl").value.trim());
+      localStorage.setItem("ai_backend_url", document.getElementById("aiBackendUrl").value.trim());
       alert("Settings saved in this browser.");
+    }
+
+    function renderAiAnswer(result = null) {
+      const categoryEl = document.getElementById("aiCategory");
+      const confidenceEl = document.getElementById("aiConfidence");
+      const answerEl = document.getElementById("aiAnswer");
+      const warningsEl = document.getElementById("aiWarnings");
+      const followupsEl = document.getElementById("aiFollowups");
+      const updatedEl = document.getElementById("aiUpdated");
+
+      if (!result) {
+        categoryEl.textContent = "-";
+        confidenceEl.textContent = "0%";
+        answerEl.textContent = "No answer yet.";
+        warningsEl.textContent = "-";
+        followupsEl.innerHTML = "";
+        updatedEl.textContent = "Last updated --:--:--";
+        return;
+      }
+
+      categoryEl.textContent = result.category || "-";
+      confidenceEl.textContent = `${Number(result.confidence || 0).toFixed(0)}%`;
+      answerEl.textContent = result.answer || "No answer returned.";
+      warningsEl.textContent = Array.isArray(result.warnings) && result.warnings.length
+        ? result.warnings.join(" | ")
+        : "-";
+      followupsEl.innerHTML = "";
+
+      (result.followups || []).forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "chip-btn";
+        button.textContent = item;
+        button.addEventListener("click", () => {
+          document.getElementById("aiQuestion").value = item;
+        });
+        followupsEl.appendChild(button);
+      });
+
+      updatedEl.textContent = "Last updated " + formatTime();
+    }
+
+    function collectAiContext() {
+      const priceHistory = state.btcHistory.map((item) => roundNumber(item.price, 2));
+      const rsi = calculateRsi(priceHistory);
+      const totalBtc = roundNumber(state.summary.totalBtc || 0, 8);
+      const currentUsd = totalBtc * Number(state.btcPrice || 0);
+      const approxCostUsd = Number(state.summary.totalUsdAfterFee || 0);
+      const pnlPercent = approxCostUsd > 0
+        ? roundNumber(((currentUsd - approxCostUsd) / approxCostUsd) * 100, 2)
+        : 0;
+
+      return {
+        btcPriceUsd: roundNumber(state.btcPrice || 0, 2),
+        rsi14: rsi,
+        priceHistory7d: priceHistory,
+        portfolio: {
+          totalBtc,
+          avgCostLak: roundNumber(state.summary.avgCostLak || 0, 2),
+          pnlPercent,
+          monthlyTargetLak: Number(document.getElementById("monthlyTargetLak").value || 0)
+        },
+        appContext: {
+          hasPortfolioData: state.records.length > 0,
+          hasMarketData: state.btcHistory.length > 0
+        }
+      };
     }
 
     function setFormMode(mode, record = null) {
@@ -1283,33 +1453,71 @@
       }
     }
 
+    function buildLocalSignal() {
+      const priceHistory = state.btcHistory.map((item) => roundNumber(item.price, 2));
+      const rsi = calculateRsi(priceHistory);
+      const totalBtc = Number(state.summary.totalBtc || 0);
+      const currentPrice = Number(state.btcPrice || 0);
+      const avgCostLak = Number(state.summary.avgCostLak || 0);
+      const approxCostUsd = Number(state.summary.totalUsdAfterFee || 0);
+      const currentUsd = totalBtc * currentPrice;
+      const pnlPercent = approxCostUsd > 0
+        ? roundNumber(((currentUsd - approxCostUsd) / approxCostUsd) * 100, 2)
+        : 0;
+
+      let signal = "HOLD";
+      let confidence = 60;
+      let reason = "Wait for a clearer setup.";
+      let rsiInterpretation = "neutral";
+      let dcaAdvice = "Keep your normal DCA schedule.";
+
+      if (rsi <= 35) {
+        rsiInterpretation = "oversold";
+      } else if (rsi >= 70) {
+        rsiInterpretation = "overbought";
+      }
+
+      if (rsi <= 35 && pnlPercent <= 5) {
+        signal = "BUY";
+        confidence = 78;
+        reason = "RSI is weak and price is still in a favorable DCA zone.";
+        dcaAdvice = "Add one scheduled DCA entry.";
+      } else if (rsi >= 70 && pnlPercent >= 8) {
+        signal = "SELL";
+        confidence = 74;
+        reason = "RSI is extended and the position is already in profit.";
+        dcaAdvice = "Take partial profit and reduce risk.";
+      } else if (currentPrice > 0 && totalBtc > 0 && avgCostLak > 0) {
+        signal = "HOLD";
+        confidence = 68;
+        reason = "Trend is mixed, so capital preservation is better than forcing a move.";
+        dcaAdvice = "Stay consistent and wait for a stronger edge.";
+      }
+
+      return {
+        signal,
+        confidence,
+        reason,
+        rsi_interpretation: rsiInterpretation,
+        dca_advice: dcaAdvice,
+        btcPriceUsd: roundNumber(currentPrice, 2),
+        rsi14: rsi,
+        avgCostLak: roundNumber(avgCostLak, 2),
+        totalBtc: roundNumber(totalBtc, 8),
+        pnlPercent
+      };
+    }
+
     async function callClaudeSignal() {
       try {
         if (!state.btcHistory.length) {
           await fetchBTCChart();
         }
 
-        const priceHistory = state.btcHistory.map((item) => roundNumber(item.price, 2));
-        const rsi = calculateRsi(priceHistory);
-        const totalBtc = Number(state.summary.totalBtc || 0);
-        const currentUsd = totalBtc * Number(state.btcPrice || 0);
-        const approxCostUsd = Number(state.summary.totalUsdAfterFee || 0);
-        const pnlPercent = approxCostUsd > 0
-          ? roundNumber(((currentUsd - approxCostUsd) / approxCostUsd) * 100, 2)
-          : 0;
-
-        document.getElementById("signalReason").textContent = "Analyzing with Claude...";
+        document.getElementById("signalReason").textContent = "Analyzing market context...";
         document.getElementById("signalUpdated").textContent = "Last updated " + formatTime();
 
-        const signalData = await apiJsonp("analyzeSignal", {
-          price: roundNumber(state.btcPrice, 2),
-          priceHistory: JSON.stringify(priceHistory),
-          rsi,
-          avgCostLak: roundNumber(state.summary.avgCostLak || 0, 2),
-          totalBtc: roundNumber(totalBtc, 8),
-          pnlPercent,
-          monthlyTargetLak: Number(document.getElementById("monthlyTargetLak").value || 0)
-        });
+        const signalData = buildLocalSignal();
 
         state.signal = {
           SIGNAL: signalData.signal,
@@ -1319,6 +1527,12 @@
           DCA_ADVICE: signalData.dca_advice,
           TIMESTAMP: new Date().toISOString()
         };
+
+        try {
+          await apiJsonp("saveSignal", signalData);
+        } catch (error) {
+          console.error(error);
+        }
 
         renderSignal();
 
@@ -1334,11 +1548,90 @@
       }
     }
 
+    async function askBitcoinAI() {
+      try {
+        const question = document.getElementById("aiQuestion").value.trim();
+        const backendUrl = getAiBackendUrl();
+
+        if (!question) {
+          throw new Error("Please enter a question first.");
+        }
+        if (!backendUrl) {
+          throw new Error("Please add your AI Backend URL in Settings first.");
+        }
+
+        document.getElementById("aiStatus").textContent = "Thinking...";
+
+        if (!state.btcHistory.length) {
+          await fetchBTCChart();
+        }
+
+        const response = await fetch(backendUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            question,
+            context: collectAiContext()
+          })
+        });
+
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error || "AI backend request failed.");
+        }
+
+        renderAiAnswer(payload.data);
+        try {
+          const context = collectAiContext();
+          await apiJsonp("saveAiChatLog", {
+            question,
+            category: payload.data.category,
+            confidence: payload.data.confidence,
+            answer: payload.data.answer,
+            warnings: (payload.data.warnings || []).join(" | "),
+            btcPriceUsd: context.btcPriceUsd,
+            rsi14: context.rsi14,
+            totalBtc: context.portfolio.totalBtc,
+            avgCostLak: context.portfolio.avgCostLak,
+            pnlPercent: context.portfolio.pnlPercent
+          });
+        } catch (error) {
+          console.error(error);
+        }
+        document.getElementById("aiStatus").textContent = "Answer received.";
+      } catch (error) {
+        console.error(error);
+        renderAiAnswer({
+          category: "error",
+          confidence: 0,
+          answer: error.message,
+          warnings: ["AI request did not complete."],
+          followups: []
+        });
+        document.getElementById("aiStatus").textContent = error.message;
+      }
+    }
+
+    function clearAiComposer() {
+      document.getElementById("aiQuestion").value = "";
+      document.getElementById("aiStatus").textContent = "Ready";
+      renderAiAnswer(null);
+    }
+
     function bindActions() {
       document.getElementById("saveSettingsBtn").addEventListener("click", saveSettings);
       document.getElementById("saveDcaBtn").addEventListener("click", saveDCARecord);
       document.getElementById("cancelEditBtn").addEventListener("click", resetDcaForm);
       document.getElementById("analyzeBtn").addEventListener("click", callClaudeSignal);
+      document.getElementById("askAiBtn").addEventListener("click", askBitcoinAI);
+      document.getElementById("clearAiBtn").addEventListener("click", clearAiComposer);
+      document.querySelectorAll("[data-prompt]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.getElementById("aiQuestion").value = button.dataset.prompt;
+        });
+      });
     }
 
     function showLoadError(message) {
@@ -1362,6 +1655,7 @@
 
       seedDefaults();
       renderSignal();
+      renderAiAnswer();
       renderPortfolioTable();
       renderSummary();
       renderSyncBadges();
